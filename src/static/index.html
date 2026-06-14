@@ -81,6 +81,10 @@ main {
   background: var(--bg-panel);
   overflow-y: auto; overflow-x: hidden;
   padding: 8px 0;
+  transition: margin-left 0.2s, width 0.2s;
+}
+#sidebar.hidden {
+  margin-left: -260px; width: 0; padding: 0; border: none;
 }
 #tree { font-family: "SF Mono", "Cascadia Code", "Fira Code", monospace; font-size: 13px; }
 .tree-item { display: flex; align-items: center; cursor: pointer; padding: 3px 12px; user-select: none; white-space: nowrap; }
@@ -138,6 +142,7 @@ main {
 <div id="app" style="display:flex;flex-direction:column;height:100%">
   <header>
     <div class="header-left">
+      <button id="sidebarBtn" class="icon-btn" title="Toggle sidebar">☰</button>
       <button id="themeBtn" class="icon-btn" title="Toggle theme">☀</button>
       <span style="font-weight:600;font-size:14px">simd</span>
     </div>
@@ -173,6 +178,8 @@ main {
   const MAX_CACHE = 50;
 
   const themeBtn = document.getElementById('themeBtn');
+  const sidebarBtn = document.getElementById('sidebarBtn');
+  const sidebar = document.getElementById('sidebar');
   const filenameEl = document.getElementById('filename');
   const mdContent = document.getElementById('mdContent');
   const rawContent = document.getElementById('rawContent');
@@ -189,6 +196,20 @@ main {
   function toggleTheme() {
     const current = document.body.getAttribute('data-theme');
     applyTheme(current === 'dark' ? 'light' : 'dark');
+  }
+
+  function toggleSidebar() {
+    const hidden = sidebar.classList.toggle('hidden');
+    sidebarBtn.textContent = hidden ? '▶' : '☰';
+    localStorage.setItem('simd-sidebar', hidden ? '0' : '1');
+  }
+
+  function applySidebar() {
+    const saved = localStorage.getItem('simd-sidebar');
+    if (saved === '0') {
+      sidebar.classList.add('hidden');
+      sidebarBtn.textContent = '▶';
+    }
   }
 
   async function loadTree() {
@@ -332,6 +353,7 @@ main {
   applyTheme(savedTheme);
 
   themeBtn.addEventListener('click', toggleTheme);
+  sidebarBtn.addEventListener('click', toggleSidebar);
 
   const logoutBtn = document.getElementById('logoutBtn');
   logoutBtn.addEventListener('click', async function() {
@@ -344,6 +366,8 @@ main {
       switchView(this.dataset.mode);
     });
   });
+
+  applySidebar();
 
   loadTree();
 })();
