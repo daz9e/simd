@@ -1,0 +1,10 @@
+services:
+  simd:
+    image: daz9e/simd:latest
+    container_name: simd
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./notes:/data
+      - ./config:/config
+    restart: unless-stopped

@@ -252,7 +252,10 @@ fn handle(mut req: Request, ctx: &Ctx) {
         if !auth::is_authenticated(config, &req, &ctx.session_store) {
             drop(mode_guard);
             if url == "/" {
-                html_respond(req, LOGIN_PAGE);
+                let resp = Response::from_string("Redirecting...")
+                    .with_status_code(StatusCode(302))
+                    .with_header("Location: /login".parse::<Header>().unwrap());
+                let _ = req.respond(resp);
                 return;
             }
             if url.starts_with("/api/") {
@@ -298,7 +301,7 @@ fn read_body_limited(req: &mut Request, max: usize) -> Result<String, String> {
 
 fn html_respond(req: Request, html: &str) {
     let ct: Header = "Content-Type: text/html; charset=utf-8".parse().unwrap();
-    let cc: Header = "Cache-Control: public, max-age=3600".parse().unwrap();
+    let cc: Header = "Cache-Control: no-cache".parse().unwrap();
     let nosniff: Header = "X-Content-Type-Options: nosniff".parse().unwrap();
     let xfo: Header = "X-Frame-Options: DENY".parse().unwrap();
     let resp = Response::from_string(html.to_string())
