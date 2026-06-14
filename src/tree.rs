@@ -31,7 +31,7 @@ pub fn handle_tree_request(req: Request, data_path: &Path, tree_cache: &Mutex<Tr
         }
     }
 
-    let tree = build_tree(data_path);
+    let tree = build_tree_impl(data_path, data_path);
     let resp_body = serde_json::to_string(&TreeResponse { entries: tree }).unwrap();
 
     {
@@ -44,7 +44,7 @@ pub fn handle_tree_request(req: Request, data_path: &Path, tree_cache: &Mutex<Tr
     let _ = req.respond(response);
 }
 
-fn build_tree(base_path: &Path) -> Vec<TreeNode> {
+fn build_tree_impl(root: &Path, base_path: &Path) -> Vec<TreeNode> {
     let mut entries = Vec::new();
     let Ok(dir) = fs::read_dir(base_path) else { return entries };
 
@@ -55,13 +55,13 @@ fn build_tree(base_path: &Path) -> Vec<TreeNode> {
         }
         let path = entry.path();
         let rel_path = path
-            .strip_prefix(base_path)
+            .strip_prefix(root)
             .unwrap_or(&path)
             .to_string_lossy()
             .to_string();
 
         if path.is_dir() {
-            let children = build_tree(&path);
+            let children = build_tree_impl(root, &path);
             entries.push(TreeNode {
                 name,
                 kind: "dir".to_string(),
