@@ -62,7 +62,8 @@ fn main() {
     let mode = Arc::new(Mutex::new(mode));
     let file_cache = Arc::new(Mutex::new(cache::FileCache::new(100)));
     let tree_cache = Arc::new(Mutex::new(cache::TreeCache::new(30)));
-    let session_store = Arc::new(Mutex::new(session::SessionStore::new(session_duration)));
+    let session_path = PathBuf::from(&config_dir).join("sessions.json");
+    let session_store = Arc::new(Mutex::new(session::SessionStore::new(session_duration, session_path)));
     let rate_limiter = Arc::new(Mutex::new(auth::RateLimiter::new(5, 300)));
 
     let ctx = Arc::new(Ctx {

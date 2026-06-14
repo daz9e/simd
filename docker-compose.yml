@@ -6,5 +6,8 @@ services:
       - "8080:8080"
     volumes:
       - ./notes:/data
-      - ./config:/config
+      - simd_config:/config
     restart: unless-stopped
+
+volumes:
+  simd_config:
