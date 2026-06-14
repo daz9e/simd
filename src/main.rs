@@ -148,7 +148,7 @@ fn handle(mut req: Request, ctx: &Ctx) {
                 drop(store);
                 drop(mode_guard);
                 let cookie = format!(
-                    "simd_session={token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age={duration}"
+                    "simd_session={token}; Path=/; HttpOnly; SameSite=Lax; Max-Age={duration}"
                 );
                 let cookie_header: Header =
                     format!("Set-Cookie: {cookie}").parse().unwrap();
@@ -205,7 +205,7 @@ fn handle(mut req: Request, ctx: &Ctx) {
                 let duration = ctx.session_store.lock().unwrap_or_else(PoisonError::into_inner).duration();
                 drop(mode_guard);
                 let cookie = format!(
-                    "simd_session={token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age={duration}"
+                    "simd_session={token}; Path=/; HttpOnly; SameSite=Lax; Max-Age={duration}"
                 );
                 let cookie_header: Header =
                     format!("Set-Cookie: {cookie}").parse().unwrap();
@@ -228,7 +228,7 @@ fn handle(mut req: Request, ctx: &Ctx) {
             ctx.session_store.lock().unwrap_or_else(PoisonError::into_inner).remove(&token);
         }
         let cookie_header: Header =
-            "Set-Cookie: simd_session=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0"
+            "Set-Cookie: simd_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0"
                 .parse()
                 .unwrap();
         let header: Header = "Content-Type: application/json".parse().unwrap();
