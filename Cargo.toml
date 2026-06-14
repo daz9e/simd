@@ -1,0 +1,24 @@
+[package]
+name = "simd"
+version = "0.1.0"
+edition = "2021"
+description = "A minimal markdown document viewer"
+license = "MIT"
+repository = "https://github.com/daz9e/simd"
+keywords = ["markdown", "viewer", "documents"]
+categories = ["command-line-utilities", "web-programming"]
+
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true
+codegen-units = 1
+
+[dependencies]
+tiny_http = "0.12"
+pulldown-cmark = "0.11"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+bcrypt = "0.16"
+base64 = "0.22"
+libc = "0.2"

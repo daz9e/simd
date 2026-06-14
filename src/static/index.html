@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>simd</title>
+<style>
+:root {
+  --bg: #ffffff;
+  --bg-panel: #f6f8fa;
+  --text: #1a1a2e;
+  --text-muted: #888;
+  --border: #e1e4e8;
+  --accent: #0366d6;
+  --tree-hover: #f0f2f4;
+  --tree-active: #ddeeff;
+  --header-bg: #f6f8fa;
+  --card-bg: #ffffff;
+  --code-bg: #f6f8fa;
+  --code-border: #e1e4e8;
+}
+[data-theme="dark"] {
+  --bg: #1e1e1e;
+  --bg-panel: #252526;
+  --text: #d4d4d4;
+  --text-muted: #777;
+  --border: #404040;
+  --accent: #569cd6;
+  --tree-hover: #2a2d2e;
+  --tree-active: #094771;
+  --header-bg: #2d2d2d;
+  --card-bg: #2d2d2d;
+  --code-bg: #1e1e1e;
+  --code-border: #404040;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex; flex-direction: column;
+  transition: background 0.2s, color 0.2s;
+}
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 42px; padding: 0 12px;
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 8px;
+}
+.header-left { display: flex; align-items: center; gap: 8px; }
+.header-center { flex: 1; text-align: center; font-size: 13px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.header-right { display: flex; align-items: center; gap: 6px; }
+.icon-btn {
+  background: none; border: 1px solid var(--border); border-radius: 4px;
+  cursor: pointer; font-size: 16px; width: 30px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text); line-height: 1;
+}
+.icon-btn:hover { background: var(--tree-hover); }
+.view-toggle { display: flex; border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+.view-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: 11px; font-weight: 600; padding: 3px 10px;
+  color: var(--text-muted); letter-spacing: 0.3px;
+}
+.view-btn.active { background: var(--accent); color: #fff; }
+.view-btn:not(.active):hover { background: var(--tree-hover); }
+main {
+  display: flex; flex: 1; overflow: hidden;
+}
+#content {
+  flex: 1; overflow-y: auto; padding: 24px 32px;
+  position: relative; min-width: 0;
+}
+#sidebar {
+  width: 260px; flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  background: var(--bg-panel);
+  overflow-y: auto; overflow-x: hidden;
+  padding: 8px 0;
+}
+#tree { font-family: "SF Mono", "Cascadia Code", "Fira Code", monospace; font-size: 13px; }
+.tree-item { display: flex; align-items: center; cursor: pointer; padding: 3px 12px; user-select: none; white-space: nowrap; }
+.tree-item:hover { background: var(--tree-hover); }
+.tree-item.active { background: var(--tree-active); }
+.tree-icon { width: 16px; flex-shrink: 0; text-align: center; font-size: 10px; color: var(--text-muted); }
+.tree-name { margin-left: 4px; overflow: hidden; text-overflow: ellipsis; }
+.tree-item.dir > .tree-name { font-weight: 600; }
+.tree-children { display: none; }
+.tree-children.open { display: block; }
+#placeholder {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  color: var(--text-muted); font-size: 16px; text-align: center;
+}
+
+/* Markdown body styling */
+.markdown-body { max-width: 900px; line-height: 1.7; font-size: 15px; }
+.markdown-body h1 { font-size: 2em; margin: 0.67em 0; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+.markdown-body h2 { font-size: 1.5em; margin: 0.75em 0; border-bottom: 1px solid var(--border); padding-bottom: 0.3em; }
+.markdown-body h3 { font-size: 1.25em; margin: 0.83em 0; }
+.markdown-body h4 { font-size: 1em; margin: 1.12em 0; }
+.markdown-body p { margin: 0 0 16px; }
+.markdown-body a { color: var(--accent); text-decoration: none; }
+.markdown-body a:hover { text-decoration: underline; }
+.markdown-body pre {
+  background: var(--code-bg); border: 1px solid var(--code-border); border-radius: 6px;
+  padding: 16px; overflow-x: auto; margin: 0 0 16px; font-size: 13px; line-height: 1.45;
+}
+.markdown-body code {
+  font-family: "SF Mono", "Cascadia Code", "Fira Code", monospace;
+  background: var(--code-bg); padding: 2px 5px; border-radius: 3px; font-size: 0.9em;
+}
+.markdown-body pre code { background: none; padding: 0; border-radius: 0; }
+.markdown-body blockquote {
+  margin: 0 0 16px; padding: 0 16px; color: var(--text-muted);
+  border-left: 4px solid var(--border);
+}
+.markdown-body ul, .markdown-body ol { margin: 0 0 16px; padding-left: 2em; }
+.markdown-body li { margin: 0.25em 0; }
+.markdown-body hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+.markdown-body table { border-collapse: collapse; margin: 0 0 16px; width: 100%; }
+.markdown-body th, .markdown-body td { border: 1px solid var(--border); padding: 6px 13px; }
+.markdown-body th { background: var(--bg-panel); font-weight: 600; }
+.markdown-body img { max-width: 100%; }
+.markdown-body input[type="checkbox"] { margin-right: 6px; }
+
+#rawContent {
+  font-family: "SF Mono", "Cascadia Code", "Fira Code", monospace;
+  font-size: 13px; line-height: 1.5; white-space: pre-wrap;
+  max-width: 900px; margin: 0;
+}
+</style>
+</head>
+<body data-theme="light">
+<div id="app" style="display:flex;flex-direction:column;height:100%">
+  <header>
+    <div class="header-left">
+      <button id="themeBtn" class="icon-btn" title="Toggle theme">☀</button>
+      <span style="font-weight:600;font-size:14px">simd</span>
+    </div>
+    <div class="header-center"><span id="filename">No file open</span></div>
+    <div class="header-right">
+      <div class="view-toggle">
+        <button class="view-btn active" data-mode="md">MD</button>
+        <button class="view-btn" data-mode="raw">Raw</button>
+      </div>
+      <button id="logoutBtn" class="icon-btn" title="Sign out" style="font-size:11px;width:auto;padding:0 8px;font-weight:600;">Sign out</button>
+    </div>
+  </header>
+  <main>
+    <aside id="sidebar">
+      <div id="tree"></div>
+    </aside>
+    <div id="content">
+      <div id="mdContent" class="markdown-body" style="display:none"></div>
+      <pre id="rawContent" style="display:none"></pre>
+      <div id="placeholder">Select a file from the tree</div>
+    </div>
+  </main>
+</div>
+<script>
+(function() {
+  const state = {
+    currentPath: null,
+    viewMode: 'md',
+    treeExpanded: new Set()
+  };
+
+  const fileCache = new Map();
+  const MAX_CACHE = 50;
+
+  const themeBtn = document.getElementById('themeBtn');
+  const filenameEl = document.getElementById('filename');
+  const mdContent = document.getElementById('mdContent');
+  const rawContent = document.getElementById('rawContent');
+  const placeholder = document.getElementById('placeholder');
+  const treeEl = document.getElementById('tree');
+  const viewBtns = document.querySelectorAll('.view-btn');
+
+  function applyTheme(theme) {
+    document.body.setAttribute('data-theme', theme);
+    themeBtn.textContent = theme === 'dark' ? '☾' : '☀';
+    localStorage.setItem('simd-theme', theme);
+  }
+
+  function toggleTheme() {
+    const current = document.body.getAttribute('data-theme');
+    applyTheme(current === 'dark' ? 'light' : 'dark');
+  }
+
+  async function loadTree() {
+    try {
+      const res = await fetch('/api/tree');
+      if (res.status === 401) { window.location.href = '/login'; return; }
+      const data = await res.json();
+      renderTree(data.entries || [], treeEl, 0);
+    } catch (e) {
+      treeEl.textContent = 'Failed to load tree';
+    }
+  }
+
+  function renderTree(entries, container, depth) {
+    for (const entry of entries) {
+      if (entry.kind === 'dir') {
+        const item = document.createElement('div');
+        item.className = 'tree-item dir';
+        item.style.paddingLeft = (12 + depth * 16) + 'px';
+        item.dataset.path = entry.path;
+
+        const icon = document.createElement('span');
+        icon.className = 'tree-icon';
+        icon.textContent = state.treeExpanded.has(entry.path) ? '▾' : '▸';
+        item.appendChild(icon);
+
+        const name = document.createElement('span');
+        name.className = 'tree-name';
+        name.textContent = entry.name;
+        item.appendChild(name);
+
+        const children = document.createElement('div');
+        children.className = 'tree-children' + (state.treeExpanded.has(entry.path) ? ' open' : '');
+        if (entry.children) renderTree(entry.children, children, depth + 1);
+
+        item.addEventListener('click', function(e) {
+          e.stopPropagation();
+          const isOpen = children.classList.toggle('open');
+          icon.textContent = isOpen ? '▾' : '▸';
+          if (isOpen) {
+            state.treeExpanded.add(entry.path);
+            fetch('/api/cache-dir?path=' + encodeURIComponent(entry.path), { method: 'POST' }).catch(function(){});
+          } else {
+            state.treeExpanded.delete(entry.path);
+          }
+        });
+
+        container.appendChild(item);
+        container.appendChild(children);
+      } else {
+        const item = document.createElement('div');
+        item.className = 'tree-item file';
+        item.style.paddingLeft = (12 + depth * 16) + 'px';
+        item.dataset.path = entry.path;
+
+        const icon = document.createElement('span');
+        icon.className = 'tree-icon';
+        icon.textContent = ' ';
+        item.appendChild(icon);
+
+        const name = document.createElement('span');
+        name.className = 'tree-name';
+        name.textContent = entry.name;
+        item.appendChild(name);
+
+        item.addEventListener('click', function(e) {
+          e.stopPropagation();
+          openFile(entry.path);
+          treeEl.querySelectorAll('.tree-item.file.active').forEach(el => el.classList.remove('active'));
+          item.classList.add('active');
+        });
+
+        container.appendChild(item);
+      }
+    }
+  }
+
+  async function openFile(path) {
+    state.currentPath = path;
+
+    // Show cached data immediately if available
+    if (fileCache.has(path)) {
+      const cached = fileCache.get(path);
+      filenameEl.textContent = cached.filename;
+      mdContent.innerHTML = cached.html || '';
+      rawContent.textContent = cached.raw || '';
+      placeholder.style.display = 'none';
+      switchView(state.viewMode);
+    } else {
+      filenameEl.textContent = path.split('/').pop();
+      placeholder.textContent = 'Loading…';
+    }
+
+    try {
+      const res = await fetch('/api/file?path=' + encodeURIComponent(path));
+      if (res.status === 401) { window.location.href = '/login'; return; }
+      if (!res.ok) { showPlaceholder('Error loading file'); return; }
+      const data = await res.json();
+
+      // Update cache (LRU: evict oldest if over limit)
+      if (fileCache.size >= MAX_CACHE) {
+        const first = fileCache.keys().next().value;
+        fileCache.delete(first);
+      }
+      fileCache.set(path, data);
+
+      filenameEl.textContent = data.filename || path;
+      mdContent.innerHTML = data.html || '';
+      rawContent.textContent = data.raw || '';
+      placeholder.style.display = 'none';
+      switchView(state.viewMode);
+    } catch (e) {
+      if (fileCache.has(path)) {
+        // Cached data is already shown, ignore error
+        return;
+      }
+      showPlaceholder('Error loading file');
+    }
+  }
+
+  function switchView(mode) {
+    state.viewMode = mode;
+    viewBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.mode === mode));
+    if (state.currentPath) {
+      mdContent.style.display = mode === 'md' ? 'block' : 'none';
+      rawContent.style.display = mode === 'raw' ? 'block' : 'none';
+    }
+  }
+
+  function showPlaceholder(text) {
+    placeholder.textContent = text || 'Select a file from the tree';
+    placeholder.style.display = 'block';
+    mdContent.style.display = 'none';
+    rawContent.style.display = 'none';
+    state.currentPath = null;
+    filenameEl.textContent = 'No file open';
+  }
+
+  // Init
+  const savedTheme = localStorage.getItem('simd-theme') || 'light';
+  applyTheme(savedTheme);
+
+  themeBtn.addEventListener('click', toggleTheme);
+
+  const logoutBtn = document.getElementById('logoutBtn');
+  logoutBtn.addEventListener('click', async function() {
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.href = '/login';
+  });
+
+  viewBtns.forEach(btn => {
+    btn.addEventListener('click', function() {
+      switchView(this.dataset.mode);
+    });
+  });
+
+  loadTree();
+})();
+</script>
+</body>
+</html>
